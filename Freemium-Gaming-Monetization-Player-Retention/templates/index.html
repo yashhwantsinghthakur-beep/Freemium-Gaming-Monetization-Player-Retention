@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GamePulse — Freemium Gaming Analytics</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+    <div class="app-shell">
+        <div class="mobile-overlay" id="mobile-overlay"></div>
+
+        <aside class="sidebar" id="sidebar">
+            <div class="brand">
+                <div class="brand-mark">GP</div>
+                <div>
+                    <div class="brand-name">GamePulse</div>
+                    <div class="brand-sub">Analytics Intelligence</div>
+                </div>
+            </div>
+
+            <div class="filter-header">
+                <div>
+                    <span class="eyebrow">DATA SCOPE</span>
+                    <h5>Filter players</h5>
+                </div>
+                <span class="filter-status" id="filter-status">All data</span>
+            </div>
+
+            <p class="filter-help">Leave a filter empty to include every value. Selecting one value automatically limits
+                every KPI, chart and table to that selection.</p>
+
+            <div class="filter-block">
+                <label>Game genre</label>
+                <select id="genres" class="form-control select2" multiple>
+                    {% for genre in genres %}<option value="{{ genre }}">{{ genre }}</option>{% endfor %}
+                </select>
+            </div>
+
+            <div class="filter-block">
+                <label>Spending segment</label>
+                <select id="segments" class="form-control select2" multiple>
+                    {% for seg in segments %}<option value="{{ seg }}">{{ seg }}</option>{% endfor %}
+                </select>
+            </div>
+
+            <div class="filter-block">
+                <label>Device</label>
+                <select id="devices" class="form-control select2" multiple>
+                    {% for dev in devices %}<option value="{{ dev }}">{{ dev }}</option>{% endfor %}
+                </select>
+            </div>
+
+            <div class="filter-block">
+                <label>Country</label>
+                <select id="countries" class="form-control select2" multiple>
+                    {% for country in countries %}<option value="{{ country }}">{{ country }}</option>{% endfor %}
+                </select>
+            </div>
+
+            <div class="active-filter-box" id="active-filters">
+                <span class="muted">No filters selected</span>
+            </div>
+
+            <button id="apply-filters-btn" class="btn btn-primary w-100">Apply selection</button>
+            <button id="reset-filters-btn" class="btn btn-ghost w-100 mt-2">Clear all filters</button>
+
+            <div class="sidebar-footer">
+                <span class="live-dot"></span>
+                <span>Analytics engine ready</span>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <button id="mobile-menu-btn" class="mobile-menu-btn">☰</button>
+                <div>
+                    <span class="eyebrow">FREEMIUM MOBILE GAMING</span>
+                    <h1>Monetization & Player Intelligence</h1>
+                    <p>Revenue concentration, engagement, conversion behavior, demographics and platform economics.</p>
+                </div>
+                <div class="data-badge"><span class="live-dot"></span><span id="row-count">0 players</span></div>
+            </header>
+
+            <section class="active-selection-bar" id="selection-bar">
+                <div>
+                    <span class="eyebrow">CURRENT VIEW</span>
+                    <strong id="selection-title">All players</strong>
+                </div>
+                <div id="selection-chips" class="selection-chips"></div>
+            </section>
+
+            <section class="kpi-grid">
+                <div class="kpi-card orange"><span>Gross Revenue</span><strong
+                        id="kpi-revenue">$0.00</strong><small>Filtered dataset</small></div>
+                <div class="kpi-card blue"><span>Paying Players</span><strong id="kpi-paying">0</strong><small>Unique
+                        purchasers</small></div>
+                <div class="kpi-card green"><span>F2P Players</span><strong id="kpi-f2p">0</strong><small>Non-paying
+                        users</small></div>
+                <div class="kpi-card purple"><span>ARPPU</span><strong id="kpi-arppu">$0.00</strong><small>Revenue /
+                        payer</small></div>
+                <div class="kpi-card cyan"><span>Conversion Rate</span><strong
+                        id="kpi-conversion">0%</strong><small>Payers / selected players</small></div>
+                <div class="kpi-card slate"><span>Avg. Sessions</span><strong id="kpi-sessions">0</strong><small>Per
+                        paying player</small></div>
+            </section>
+
+            <!-- Dynamic Key Insights & AI Strategist Container -->
+            <div class="chart-grid two" style="margin-top: 18px; margin-bottom: 22px;">
+
+                <!-- Dynamic Key Insights Panel -->
+                <section class="chart-card">
+                    <div class="chart-head" style="margin-bottom: 12px;">
+                        <h3 style="display: flex; align-items: center; gap: 8px;">
+                            <span style="color: var(--cyan); font-size: 14px;">⚡</span> Key Insights
+                        </h3>
+                        <span>Filter Intelligence</span>
+                    </div>
+                    <ul id="key-insights-list"
+                        style="list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; font-size: 12px; color: #d4dae3;">
+                        <li style="color: #687487;">Analyzing player telemetry…</li>
+                    </ul>
+                </section>
+
+                <!-- AI Monetization Strategist Panel -->
+                <section class="chart-card" style="border-top: 2px solid var(--purple);">
+                    <div class="chart-head" style="margin-bottom: 12px;">
+                        <h3 style="display: flex; align-items: center; gap: 8px;">
+                            <span style="color: var(--purple); font-size: 14px;">🤖</span> AI Monetization Strategist
+                        </h3>
+                        <button id="ask-ai-btn" class="btn btn-sm btn-ghost"
+                            style="font-size: 10px; padding: 4px 8px;">Generate AI Analysis</button>
+                    </div>
+                    <div id="ai-response-container"
+                        style="padding-top: 5px; font-size: 12px; color: #cfd7e3; line-height: 1.6;">
+                        Click <strong>Generate AI Analysis</strong> to receive real-time economy recommendations and
+                        strategic insights on the current filtered cohort.
+                    </div>
+                </section>
+
+            </div>
+
+            <nav class="section-tabs">
+                <button class="tab-btn active" data-tab="monetization">01 <span>Monetization</span></button>
+                <button class="tab-btn" data-tab="engagement">02 <span>Engagement</span></button>
+                <button class="tab-btn" data-tab="demographics">03 <span>Audience & Platform</span></button>
+                <button class="tab-btn" data-tab="conversion">04 <span>Conversion</span></button>
+                <button class="tab-btn" data-tab="explorer">05 <span>Data Explorer</span></button>
+            </nav>
+
+            <section class="tab-panel active" id="panel-monetization">
+                <div class="section-heading">
+                    <div><span class="eyebrow">REVENUE ENGINE</span>
+                        <h2>Where the money comes from</h2>
+                    </div><span class="section-note">Spending segments × genre economics</span>
+                </div>
+                <div class="chart-grid two">
+                    <article class="chart-card">
+                        <div class="chart-head">
+                            <h3>Revenue concentration</h3><span>Segment share</span>
+                        </div>
+                        <div id="chart-pareto"></div>
+                    </article>
+                    <article class="chart-card">
+                        <div class="chart-head">
+                            <h3>Gross revenue by genre</h3><span>Ranking</span>
+                        </div>
+                        <div id="chart-genre-rev"></div>
+                    </article>
+                </div>
+                <div class="chart-grid two">
+                    <article class="chart-card">
+                        <div class="chart-head">
+                            <h3>Average spend by genre & tier</h3><span>Monetization depth</span>
+                        </div>
+                        <div id="chart-depth"></div>
+                    </article>
+                    <article class="chart-card">
+                        <div class="chart-head">
+                            <h3>Total revenue by spending segment</h3><span>Whale / Dolphin / Minnow</span>
+                        </div>
+                        <div id="chart-segment-revenue"></div>
+                    </article>
+                </div>
+            </section>
+
+            <section class="tab-panel" id="panel-engagement">
+                <div class="section-heading">
+                    <div><span class="eyebrow">PLAYER BEHAVIOR</span>
+                        <h2>Does engagement translate into spend?</h2>
+                    </div><span class="section-note">Correlation + distribution</span>
+                </div>
+                <div class="chart-grid two">
+                    <article class="chart-card">
+                        <div class="chart-head">
+                            <h3>Numerical feature correlation</h3><span>Relationship map</span>
+                        </div>
+                        <div id="chart-corr"></div>
+                    </article>
+                    <article class="chart-card">
+                        <div class="chart-head">
+                            <h3>Session count vs purchase amount</h3><span>Player-level relationship</span>
+                        </div>
+                        <div id="chart-scatter"></div>
+                    </article>
+                </div>
+                <div class="chart-grid two">
+                    <article class="chart-card">
+                        <div class="chart-head">
+                            <h3>Session length by spending tier</h3><span>Distribution</span>
+                        </div>
+                        <div id="chart-session-box"></div>
+                    </article>
+                    <article class="chart-card">
+                        <div class="chart-head">
+                            <h3>Engagement profile by tier</h3><span>Average behavior</span>
+                        </div>
+                        <div id="chart-engagement"></div>
+                    </article>
+                </div>
+            </section>
+
+            <section class="tab-panel" id="panel-demographics">
+                <div class="section-heading">
+                    <div><span class="eyebrow">AUDIENCE & PLATFORM</span>
+                        <h2>Who plays and where value comes from</h2>
+                    </div><span class="section-note">Device × country × demographics</span>
+                </div>
+                <div class="chart-grid two">
+                    <article class="chart-card">
+                        <div class="chart-head">
+                            <h3>ARPU by device</h3><span>Value per player</span>
+                        </div>
+                        <div id="chart-device"></div>
+                    </article>
+                    <article class="chart-card">
+                        <div class="chart-head">
+                            <h3>Revenue by device</h3><span>Platform contribution</span>
+                        </div>
+                        <div id="chart-device-revenue"></div>
+                    </article>
+                </div>
+                <div class="chart-grid two">
+                    <article class="chart-card">
+                        <div class="chart-head">
+                            <h3>Top countries by player volume</h3><span>Audience size</span>
+                        </div>
+                        <div id="chart-country"></div>
+                    </article>
+                    <article class="chart-card">
+                        <div class="chart-head">
+                            <h3>Top countries by average revenue</h3><span>Purchasing power</span>
+                        </div>
+                        <div id="chart-country-arpu"></div>
+                    </article>
+                </div>
+                <div class="chart-grid two">
+                    <article class="chart-card">
+                        <div class="chart-head">
+                            <h3>Average spend by genre & gender</h3><span>Demographic preference</span>
+                        </div>
+                        <div id="chart-gender-genre"></div>
+                    </article>
+                    <article class="chart-card">
+                        <div class="chart-head">
+                            <h3>Age distribution</h3><span>Player base</span>
+                        </div>
+                        <div id="chart-age"></div>
+                    </article>
+                </div>
+            </section>
+
+            <section class="tab-panel" id="panel-conversion">
+                <div class="section-heading">
+                    <div><span class="eyebrow">CONVERSION WINDOW</span>
+                        <h2>When players become payers</h2>
+                    </div><span class="section-note">First-purchase behavior</span>
+                </div>
+                <div class="insight-banner">
+                    <div class="insight-icon">↗</div>
+                    <div><strong>Use the filtered view to isolate the conversion behavior of a specific genre, device,
+                            country or spending tier.</strong>
+                        <p>The chart updates from the same filtered dataset as the KPIs and other dashboard sections.
+                        </p>
+                    </div>
+                </div>
+                <div class="chart-card full">
+                    <div class="chart-head">
+                        <h3>Days from install to first purchase</h3><span>Conversion latency distribution</span>
+                    </div>
+                    <div id="chart-latency"></div>
+                </div>
+            </section>
+
+            <section class="tab-panel" id="panel-explorer">
+                <div class="section-heading">
+                    <div><span class="eyebrow">RAW TELEMETRY</span>
+                        <h2>Explore only the selected population</h2>
+                    </div><button id="download-csv-btn" class="btn btn-primary btn-sm">Download filtered CSV</button>
+                </div>
+                <div class="chart-card table-card">
+                    <div class="table-meta"><span id="table-summary">0 records</span><span>Showing first 100 rows</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="records-table">
+                            <thead>
+                                <tr id="table-head-row"></tr>
+                            </thead>
+                            <tbody id="table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <div id="loading" class="loading-overlay">
+                <div class="spinner"></div><span>Updating analytics…</span>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+
+</html>
